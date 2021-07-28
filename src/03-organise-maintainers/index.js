@@ -39,8 +39,60 @@ The results should have this structure:
  * be in alphabetical order.
  */
 
-module.exports = async function organiseMaintainers() {
-  // TODO
+const { default: axios } = require("axios");
 
-  return maintainers
+module.exports = async function organiseMaintainers() {
+
+  return axios.get("https://api.npms.io/v2/search/suggestions?q=react", {})
+  .then((response) => {
+
+    let usernamesArray = [];
+    
+    //collects all usernames
+    let packages = response.data;
+    packages.forEach(pkg => {
+      pkg.package.maintainers.forEach(maintainer => {
+        usernamesArray.push(maintainer.username);
+      });
+    });
+
+    //removes username duplicates
+    let usernamesArrayNoDupes = [];
+    usernamesArray.forEach(username => {
+      if (!usernamesArrayNoDupes.includes(username)) {
+        usernamesArrayNoDupes.push(username);
+      }
+    });
+    usernamesArrayNoDupes = usernamesArrayNoDupes.sort();
+
+    // populates return array
+    let result = [];
+    usernamesArrayNoDupes.forEach(user => {
+      let usernameObject = {};
+
+      usernameObject.username = user;
+      usernameObject.packageNames = [];
+       
+      packages.forEach(pkg => {
+        pkg.package.maintainers.forEach(maintainer => {
+          if (maintainer.username == user) {
+            usernameObject.packageNames.push(pkg.package.name);
+          };
+        });
+
+      });
+      usernameObject.packageNames = usernameObject.packageNames.sort();
+      result.push(usernameObject);
+    });
+
+    return result;
+
+  });
+
 };
+
+
+
+
+
+
